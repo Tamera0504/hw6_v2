@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>台灣每月盛產農產品地圖看板</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Tailwind Custom Config -->
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              500: '#22c55e',
+              600: '#16a34a',
+              700: '#15803d',
+              800: '#166534',
+              900: '#14532d',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* 隱藏預設滾動條但保持可滾動 */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen font-sans antialiased transition-colors duration-200">
+
+  <header class="bg-white/80 dark:bg-slate-800/80 backdrop-blur-md sticky top-0 z-30 border-b border-slate-200 dark:border-slate-700 shadow-xs">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-col md:flex-row items-center justify-between gap-4">
+      <div class="flex items-center space-x-3 w-full md:w-auto justify-between">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500 to-emerald-700 flex items-center justify-center text-white shadow-md shadow-brand-500/20">
+            <i class="fa-solid fa-wheat-awn text-xl"></i>
+          </div>
+          <div>
+            <h1 class="text-lg font-bold text-slate-900 dark:text-white leading-tight flex items-center gap-2">
+              台灣每月盛產農產品地圖
+              <span class="text-xs font-normal text-emerald-700 bg-emerald-100 dark:bg-emerald-900/50 dark:text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">MOA OpenData</span>
+            </h1>
+            <p class="text-xs text-slate-500 dark:text-slate-400">探索寶島四季旬味 ‧ 22 縣市在地旬農旬果</p>
+          </div>
+        </div>
+
+        <!-- 深色模式 switch (Mobile helper) -->
+        <button onclick="toggleDarkMode()" class="md:hidden p-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 rounded-lg">
+          <i id="theme-icon-mobile" class="fa-solid fa-moon"></i>
+        </button>
+      </div>
+
+      <div class="flex items-center space-x-3 w-full md:w-auto justify-end">
+        <!-- 狀態數據 Badges -->
+        <div id="status-badge" class="flex items-center text-xs font-medium px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 text-brand-700 dark:text-brand-300 border border-emerald-200 dark:border-emerald-800">
+          <i class="fa-solid fa-circle-notch fa-spin mr-1.5 text-brand-500"></i>
+          <span id="status-text">載入農產品資料中...</span>
+        </div>
+
+        <!-- 深色模式 Toggle -->
+        <button onclick="toggleDarkMode()" title="切換深淺模式" class="hidden md:flex p-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xs transition">
+          <i id="theme-icon-desktop" class="fa-solid fa-moon"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <section class="space-y-4">
+      <div class="flex items-center justify-between">
+        <h2 class="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-2">
+          <i class="fa-regular fa-calendar-days text-brand-600 dark:text-brand-400"></i>
+          選擇盛產月份
+        </h2>
+        <button onclick="selectCurrentMonth()" class="text-xs font-medium text-brand-600 dark:text-brand-400 hover:underline flex items-center gap-1">
+          <i class="fa-solid fa-location-crosshairs"></i>
+          切換至當月 (<span id="current-month-label">--月</span>)
+        </button>
+      </div>
+
+      <!-- 12 個月橫向滑動頁籤 (Touch scrollable) -->
+      <div class="relative">
+        <div id="month-tabs" class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2 pt-1 touch-pan-x">
+          <!-- JS 動態生成月份按鈕 -->
+        </div>
+      </div>
+
+      <!-- 搜尋與縣市過濾 Toolbar -->
+      <div class="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-xs border border-slate-200 dark:border-slate-700 flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+        <div class="flex flex-col sm:flex-row gap-3 flex-1">
+          <!-- 關鍵字搜尋 -->
+          <div class="relative flex-1">
+            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+            <input type="text" id="search-input" oninput="applyFilters()" placeholder="搜尋農產品名稱、關鍵字或特色..."
+              class="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 transition">
+          </div>
+
+          <!-- 22 縣市選擇下拉選單 -->
+          <div class="relative w-full sm:w-48">
+            <i class="fa-solid fa-map-pin absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-600 dark:text-brand-400 text-sm"></i>
+            <select id="county-select" onchange="applyFilters()" 
+              class="w-full pl-9 pr-8 py-2 text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 appearance-none cursor-pointer">
+              <option value="">全台 22 縣市 (不限)</option>
+            </select>
+            <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
+          </div>
+        </div>
+
+        <!-- 重置過濾條件按鈕 -->
+        <button onclick="resetFilters()" class="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg transition flex items-center justify-center gap-1.5">
+          <i class="fa-solid fa-rotate-left"></i>
+          重置條件
+        </button>
+      </div>
+    </section>
+
+    <section class="flex flex-wrap items-center justify-between gap-3 text-sm text-slate-600 dark:text-slate-400 bg-emerald-50/50 dark:bg-slate-800/50 px-4 py-2.5 rounded-lg border border-emerald-100 dark:border-slate-700">
+      <div class="flex items-center gap-2">
+        <span class="font-bold text-slate-900 dark:text-white" id="summary-month-title">-- 月份</span>
+        <span>盛產農產品列表：共 <strong class="text-brand-600 dark:text-brand-400 text-base" id="summary-count">0</strong> 筆標的</span>
+      </div>
+      <div id="filter-active-tags" class="flex flex-wrap items-center gap-1.5 text-xs">
+        <!-- 動態顯示當前套用的篩選條件 -->
+      </div>
+    </section>
+
+    <section>
+      <div id="produce-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+        <!-- JS 動態渲染農產品卡片 -->
+      </div>
+    </section>
+  </main>
+
+  <!-- 農產品詳情 Modal 彈窗 -->
+  <div id="detail-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl transform transition-all border border-slate-200 dark:border-slate-700">
+      <div class="relative h-56 bg-slate-200 dark:bg-slate-700">
+        <img id="modal-img" src="" alt="" class="w-full h-full object-cover">
+        <button onclick="closeModal()" class="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 text-white hover:bg-black/80 flex items-center justify-center transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+        <div class="absolute bottom-3 left-3 right-3 flex items-center justify-between">
+          <span id="modal-month-badge" class="bg-emerald-600/90 text-white text-xs font-semibold px-2.5 py-1 rounded-md backdrop-blur-xs"></span>
+        </div>
+      </div>
+      <div class="p-6 space-y-4">
+        <div>
+          <h3 id="modal-title" class="text-2xl font-bold text-slate-900 dark:text-white"></h3>
+          <div id="modal-counties" class="flex flex-wrap gap-1.5 mt-2"></div>
+        </div>
+        
+        <div class="space-y-2">
+          <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider">主要特色與盛產說明</h4>
+          <p id="modal-desc" class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed bg-slate-50 dark:bg-slate-900/50 p-3.5 rounded-xl border border-slate-100 dark:border-slate-800"></p>
+        </div>
+
+        <div class="space-y-2">
+          <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider">原始產地紀錄</h4>
+          <p id="modal-location-raw" class="text-xs text-slate-500 dark:text-slate-400 font-mono"></p>
+        </div>
+
+        <div class="pt-2 flex justify-end">
+          <button onclick="closeModal()" class="px-5 py-2 text-sm font-semibold bg-brand-600 text-white hover:bg-brand-700 rounded-xl transition">
+            關閉視窗
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 台灣 22 標準縣市清單
+    const TAIWAN_COUNTIES = [
+      '台北市', '新北市', '基隆市', '桃園市', '新竹市', '新竹縣', '苗栗縣',
+      '台中市', '彰化縣', '南投縣', '雲林縣', '嘉義市', '嘉義縣', '台南市',
+      '高雄市', '屏東縣', '宜蘭縣', '花蓮縣', '台東縣', '澎湖縣', '金門縣', '連江縣'
+    ];
+
+    // SVG 預設占位圖 (圖檔載入失敗時自動備援)
+    const PLACEHOLDER_SVG = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300"><rect width="100%" height="100%" fill="%23f1f5f9"/><text x="50%" y="50%" font-family="sans-serif" font-size="18" font-weight="bold" fill="%2394a3b8" text-anchor="middle" dominant-baseline="middle">旬農產圖檔載入中</text></svg>';
+
+    // 全域狀態管理
+    const state = {
+      allProduce: [],
+      produceMonthMap: {}, // O(1) 倒排索引
+      currentMonth: new Date().getMonth() + 1, // 預設當前月份 (1-12)
+      selectedCounty: '',
+      searchKeyword: '',
+      debounceTimer: null
+    };
+
+    // 預設完整的全台四季農產品 Mock 資料集 (以備 static json 不存在時展演)
+    const MOCK_PRODUCE_DATA = [
+      { id: 'p1', name: '蓮霧', months: [1, 2, 3, 4, 11, 12], locationRaw: '屏東縣高樹、林邊、高雄市六龜', counties: ['屏東縣', '高雄市'], feature: '黑珍珠與帝王蓮霧色澤深紅，汁多甜美，口感清脆爽口。', imageUrl: 'https://images.unsplash.com/photo-1596368708356-6e1e1025ee73?auto=format&fit=crop&w=600&q=80' },
+      { id: 'p2', name: '蜜棗', months: [1, 2, 3, 12], locationRaw: '高雄市燕巢、大社、屏東縣高樹', counties: ['高雄市', '屏東縣'], feature: '皮薄肉翠、果肉細致多汁，有台灣雪梨之美譽。', imageUrl: 'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&w=600&q=80' },
+      { id: 'p3', name: '草莓', months: [1, 2, 3, 12], locationRaw: '苗栗縣大湖鄉、泰安鄉', counties: ['苗栗縣'], feature: '香氣濃郁，酸甜適中，大湖草莓為冬季採果熱門首選。', imageUrl: 'https://images.unsplash.com/photo-1464965911861-746a04b4bca6?auto=format&fit=crop&w=600&q=80' },
+      { id: 'p4', name: '桶柑 / 柑橘', months: [1, 2, 3], locationRaw: '新竹縣峨眉、苗栗縣、台中市東勢', counties: ['新竹縣', '苗栗縣', '台中市'], feature: '柑橘多汁甜美，春節拜年年節吉祥象徵果物。', imageUrl: 'https://images.unsplash.com/photo-1611080626919-7cf5a9dbab5b?auto=format&fit=crop&w=600&q=80' },
+      { id: 'p5', name: '枇杷', months: [2, 3, 4], locationRaw: '台中市太平區、新社、南投縣國姓', counties: ['台中市', '南投縣'], feature: '黃金枇杷果肉柔軟多汁，潤肺止咳，春季珍貴果品。', imageUrl: 'https://images.unsplash.com/photo-1628151015968-3a4429e9ef04?auto=format&fit=crop&w=600&q=80' },
+      { id: 'p6', name: '箭竹筍', months: [3, 4], locationRaw: '花蓮縣光復鄉、新北市烏來區', counties: ['花蓮縣', '新北市'], feature: '原住民傳統野味旬味，富含高纖維，口感鮮嫩香脆。', imageUrl: '' },
+      { id: 'p7', name: '鳳梨 (金鑽鳳梨)', months: [3, 4, 5, 6, 7], locationRaw: '屏東縣、高雄市大樹、台南市關廟、嘉義縣民雄', counties: ['屏東縣', '高雄市', '台南市', '嘉義縣'], feature: '肉質細緻、不咬舌，甜度極高且帶有迷人熱帶果香。', imageUrl: 'https://images.unsplash.com/photo-1550258987-190a2d41a8ba?auto=format&fit=crop&w=600&q=80' },
+      { id: 'p8', name: '綠竹筍', months: [5, 6, 7, 8, 9], locationRaw: '新北市五股、八里、台北市木柵、桃園市', counties: ['新北市', '台北市', '桃園市'], feature: '鮮甜如水梨，夏季沙拉涼拌與竹筍排骨湯的最佳主角。', imageUrl: '' },
+      { id: 'p9', name: '玉荷包荔枝', months: [5, 6], locationRaw: '高雄市大樹、旗山、屏東縣', counties: ['高雄市', '屏東縣'], feature: '籽小肉厚、果肉彈牙爆汁，初夏限定極品農產。', imageUrl: 'https://images.unsplash.com/photo-1527281400683-1aae777175f8?auto=format&fit=crop&w=600&q=80' },
+      { id: 'p10', name: '愛文芒果', months: [5, 6, 7], locationRaw: '屏東縣枋山、台南市玉井、楠西', counties: ['屏東縣', '台南市'], feature: '果皮豔紅，果肉金黃甜美香氣撲鼻，台灣夏季代表水果。', imageUrl: 'https://images.unsplash.com/photo-1553279768-865429fa0078?auto=format&fit=crop&w=600&q=80' },
+      { id: 'p11', name: '巨峰葡萄', months: [6, 7, 8, 12], locationRaw: '彰化縣大村、溪湖、台中市新社、南投縣信義', counties: ['彰化縣', '台中市', '南投縣'], feature: '果粉勻稱、果肉緊實，甜度高達18度以上。', imageUrl: 'https://images.unsplash.com/photo-1537640538966-79f369143f8f?auto=format&fit=crop&w=600&q=80' },
+      { id: 'p12', name: '西瓜', months: [5, 6, 7, 8], locationRaw: '花蓮縣壽豐、雲林縣二崙、台南市', counties: ['花蓮縣', '雲林縣', '台南市'], feature: '沙甜解渴，花蓮大西瓜汁多肉沙，夏日消暑聖品。', imageUrl: 'https://images.unsplash.com/photo-1587049352847-81a56d773cae?auto=format&fit=crop&w=600&q=80' },
+      { id: 'p13', name: '麻豆文旦', months: [8, 9], locationRaw: '台南市麻豆區、花蓮縣瑞穗、苗栗縣西湖', counties: ['台南市', '花蓮縣', '苗栗縣'], feature: '中秋佳節必備，老欉文旦果肉晶瑩甘甜、回甘生津。', imageUrl: 'https://images.unsplash.com/photo-1601493700631-2b16ec4b4716?auto=format&fit=crop&w=600&q=80' },
+      { id: 'p14', name: '火龍果 (紅肉/白肉)', months: [6, 7, 8, 9, 10, 11], locationRaw: '南投縣名間、彰化縣二林、台南市', counties: ['南投縣', '彰化縣', '台南市'], feature: '富含甜菜紅素與膳食纖維，口感甜美清爽健康。', imageUrl: 'https://images.unsplash.com/photo-1527325678964-549216468488?auto=format&fit=crop&w=600&q=80' },
+      { id: 'p15', name: '甜柿', months: [9, 10, 11, 12], locationRaw: '台中市和平區摩天嶺、苗栗縣泰安、新竹縣五峰', counties: ['台中市', '苗栗縣', '新竹縣'], feature: '脆甜高水分，紅艷碩大，深秋高山頂級名產。', imageUrl: '' },
+      { id: 'p16', name: '釋迦 (大目/鳳梨釋迦)', months: [8, 9, 10, 11, 12, 1, 2], locationRaw: '台東縣太麻里、卑南、東河', counties: ['台東縣'], feature: '台東代表特產，鳳梨釋迦帶有微酸鳳梨香，口感Q彈。', imageUrl: 'https://images.unsplash.com/photo-1591857177580-dc82b9ac4e1e?auto=format&fit=crop&w=600&q=80' },
+      { id: 'p17', name: '椪柑', months: [10, 11, 12], locationRaw: '台中市東勢、石岡、嘉義縣竹崎、苗栗縣', counties: ['台中市', '嘉義縣', '苗栗縣'], feature: '果皮青黃相間，甘甜多汁帶有微酸柑橘古早味。', imageUrl: '' },
+      { id: 'p18', name: '珍珠芭樂 (番石榴)', months: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], locationRaw: '高雄市燕巢、彰化縣社頭、雲林縣', counties: ['高雄市', '彰化縣', '雲林縣'], feature: '全年盛產，珍珠芭樂香脆爽口、富含高單位維生素 C。', imageUrl: 'https://images.unsplash.com/photo-1536511135890-a7d5b839352c?auto=format&fit=crop&w=600&q=80' },
+      { id: 'p19', name: '木瓜 (台農二號)', months: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], locationRaw: '屏東縣、台南市、南投縣名間', counties: ['屏東縣', '台南市', '南投縣'], feature: '肉紅味香甜，木瓜牛奶最佳原料，四季皆豐美。', imageUrl: 'https://images.unsplash.com/photo-1617112848923-cc2234396a8d?auto=format&fit=crop&w=600&q=80' },
+      { id: 'p20', name: '三星蔥', months: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], locationRaw: '宜蘭縣三星鄉', counties: ['宜蘭縣'], feature: '蔥白長、質地柔軟甜美不辣，料理爆香提味之王。', imageUrl: '' }
+    ];
+
+    // 初始化縣市選單
+    function initCountyDropdown() {
+      const select = document.getElementById('county-select');
+      select.innerHTML = '<option value="">全台 22 縣市 (不限)</option>';
+      TAIWAN_COUNTIES.forEach(county => {
+        const opt = document.createElement('option');
+        opt.value = county;
+        opt.textContent = county;
+        select.appendChild(opt);
+      });
+    }
+
+    // 初始化 12 個月頁籤
+    function renderMonthTabs() {
+      const container = document.getElementById('month-tabs');
+      container.innerHTML = '';
+
+      for (let m = 1; m <= 12; m++) {
+        const isCurrent = m === state.currentMonth;
+        const btn = document.createElement('button');
+        btn.id = `month-tab-${m}`;
+        btn.onclick = () => selectMonth(m);
+        btn.className = `px-4 py-2 text-xs font-bold rounded-xl transition flex items-center gap-1.5 shrink-0 ${
+          isCurrent 
+            ? 'bg-brand-600 text-white shadow-md shadow-brand-500/20' 
+            : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-brand-500'
+        }`;
+        
+        btn.innerHTML = `
+          <span>${m} 月</span>
+          ${isCurrent ? '<span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>' : ''}
+        `;
+        container.appendChild(btn);
+      }
+
+      document.getElementById('current-month-label').textContent = `${new Date().getMonth() + 1}月`;
+    }
+
+    // 建立 O(1) 倒排索引：Month -> Produce Array
+    function buildMonthIndex(data) {
+      state.produceMonthMap = {};
+      for (let m = 1; m <= 12; m++) {
+        state.produceMonthMap[m] = [];
+      }
+
+      data.forEach(item => {
+        if (Array.isArray(item.months)) {
+          item.months.forEach(m => {
+            if (state.produceMonthMap[m]) {
+              state.produceMonthMap[m].push(item);
+            }
+          });
+        }
+      });
+    }
+
+    // 載入資料 (優先讀取 static JSON，失敗則降級使用豐富備援資料)
+    async function initDashboard() {
+      initCountyDropdown();
+      renderMonthTabs();
+
+      const statusBadge = document.getElementById('status-badge');
+      const statusText = document.getElementById('status-text');
+
+      try {
+        const res = await fetch(`data/produce_data.json?t=${Date.now()}`);
+        if (!res.ok) throw new Error('靜態資料檔尚在生成中');
+        const data = await res.json();
+        
+        state.allProduce = data;
+        statusText.textContent = `已載入 MOA OpenData (${data.length} 筆)`;
+        statusBadge.className = 'flex items-center text-xs font-medium px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 text-brand-700 dark:text-brand-300 border border-emerald-200 dark:border-emerald-800';
+
+      } catch (err) {
+        console.info('未偵測到 static data/produce_data.json，切換至本地備援展示資料庫:', err.message);
+        state.allProduce = MOCK_PRODUCE_DATA;
+        statusText.textContent = `展示模式 (全台 ${state.allProduce.length} 筆精選標的)`;
+        statusBadge.className = 'flex items-center text-xs font-medium px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800';
+      }
+
+      buildMonthIndex(state.allProduce);
+      selectMonth(state.currentMonth);
+    }
+
+    // 切換月份
+    function selectMonth(m) {
+      state.currentMonth = m;
+      
+      // 更新 Tab 樣式
+      for (let i = 1; i <= 12; i++) {
+        const tab = document.getElementById(`month-tab-${i}`);
+        if (tab) {
+          if (i === m) {
+            tab.className = 'px-4 py-2 text-xs font-bold rounded-xl transition flex items-center gap-1.5 shrink-0 bg-brand-600 text-white shadow-md shadow-brand-500/20';
+            tab.innerHTML = `<span>${i} 月</span><span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>`;
+          } else {
+            tab.className = 'px-4 py-2 text-xs font-bold rounded-xl transition flex items-center gap-1.5 shrink-0 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-brand-500';
+            tab.innerHTML = `<span>${i} 月</span>`;
+          }
+        }
+      }
+
+      applyFilters();
+    }
+
+    // 切換至系統當前月份
+    function selectCurrentMonth() {
+      const nowMonth = new Date().getMonth() + 1;
+      selectMonth(nowMonth);
+      
+      // 自動橫向滾動至該月份按鈕
+      const tab = document.getElementById(`month-tab-${nowMonth}`);
+      if (tab) tab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+
+    // 執行條件過濾
+    function applyFilters() {
+      clearTimeout(state.debounceTimer);
+      state.debounceTimer = setTimeout(() => {
+        state.selectedCounty = document.getElementById('county-select').value;
+        state.searchKeyword = document.getElementById('search-input').value.trim().toLowerCase();
+
+        const monthData = state.produceMonthMap[state.currentMonth] || [];
+
+        const filtered = monthData.filter(item => {
+          // 1. 縣市匹配 (匹配提取出的 counties 或原始字串)
+          const matchCounty = !state.selectedCounty || 
+            (item.counties && item.counties.includes(state.selectedCounty)) ||
+            (item.locationRaw && item.locationRaw.includes(state.selectedCounty));
+
+          // 2. 關鍵字搜尋 (品名、描述、產地)
+          const matchKeyword = !state.searchKeyword ||
+            item.name.toLowerCase().includes(state.searchKeyword) ||
+            (item.feature && item.feature.toLowerCase().includes(state.searchKeyword)) ||
+            (item.locationRaw && item.locationRaw.toLowerCase().includes(state.searchKeyword));
+
+          return matchCounty && matchKeyword;
+        });
+
+        renderGrid(filtered);
+        updateSummaryBanner(filtered.length);
+      }, 100);
+    }
+
+    // 重置過濾條件
+    function resetFilters() {
+      document.getElementById('county-select').value = '';
+      document.getElementById('search-input').value = '';
+      applyFilters();
+    }
+
+    // 更新數據狀態條
+    function updateSummaryBanner(count) {
+      document.getElementById('summary-month-title').textContent = `${state.currentMonth} 月份`;
+      document.getElementById('summary-count').textContent = count;
+
+      const activeTagsContainer = document.getElementById('filter-active-tags');
+      activeTagsContainer.innerHTML = '';
+
+      if (state.selectedCounty) {
+        activeTagsContainer.innerHTML += `<span class="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 px-2 py-0.5 rounded-md font-medium"><i class="fa-solid fa-map-pin mr-1"></i>${state.selectedCounty}</span>`;
+      }
+      if (state.searchKeyword) {
+        activeTagsContainer.innerHTML += `<span class="bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300 px-2 py-0.5 rounded-md font-medium"><i class="fa-solid fa-magnifying-glass mr-1"></i>"${state.searchKeyword}"</span>`;
+      }
+    }
+
+    // 渲染卡片網格
+    function renderGrid(list) {
+      const grid = document.getElementById('produce-grid');
+
+      if (list.length === 0) {
+        let emptyReason = `在 <strong>${state.currentMonth} 月</strong> 查無盛產農產品標的。`;
+        if (state.selectedCounty) {
+          emptyReason = `<strong>${state.currentMonth} 月</strong> 在 <strong>【${state.selectedCounty}】</strong> 尚無記錄到的盛產農產品。`;
+        }
+
+        grid.innerHTML = `
+          <div class="col-span-full py-16 px-4 bg-white dark:bg-slate-800 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 text-center space-y-3">
+            <div class="w-12 h-12 mx-auto rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-400">
+              <i class="fa-solid fa-seedling text-xl"></i>
+            </div>
+            <p class="text-sm text-slate-600 dark:text-slate-300">${emptyReason}</p>
+            <button onclick="resetFilters()" class="px-4 py-2 text-xs font-bold text-brand-600 bg-brand-50 hover:bg-brand-100 dark:bg-brand-950 dark:text-brand-300 rounded-lg transition">
+              清除條件重置搜尋
+            </button>
+          </div>
+        `;
+        return;
+      }
+
+      grid.innerHTML = list.map(item => {
+        const countiesBadges = (item.counties && item.counties.length > 0)
+          ? item.counties.slice(0, 3).map(c => `<span class="bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300 text-[11px] font-semibold px-2 py-0.5 rounded-md">${c}</span>`).join('')
+          : `<span class="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-[11px] font-medium px-2 py-0.5 rounded-md">${item.locationRaw || '全台各地'}</span>`;
+
+        const monthSpanText = item.months ? `${item.months.join(', ')}月` : '盛產中';
+
+        return `
+          <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700/80 overflow-hidden shadow-xs hover:shadow-lg transition-all duration-300 flex flex-col group">
+            <div class="relative h-44 bg-slate-100 dark:bg-slate-900 overflow-hidden">
+              <img src="${item.imageUrl || PLACEHOLDER_SVG}" 
+                   alt="${item.name}" 
+                   onerror="this.onerror=null; this.src='${PLACEHOLDER_SVG}';" 
+                   class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+              <div class="absolute top-2.5 right-2.5 bg-black/60 backdrop-blur-xs text-white text-[11px] font-medium px-2 py-0.5 rounded-full">
+                盛產期: ${monthSpanText}
+              </div>
+            </div>
+
+            <div class="p-4 flex-1 flex flex-col justify-between space-y-3">
+              <div class="space-y-2">
+                <div class="flex items-start justify-between gap-2">
+                  <h3 class="text-base font-bold text-slate-900 dark:text-white group-hover:text-brand-600 dark:group-hover:text-brand-400 transition">
+                    ${item.name}
+                  </h3>
+                </div>
+
+                <div class="flex flex-wrap gap-1">
+                  ${countiesBadges}
+                </div>
+
+                <p class="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">
+                  ${item.feature || '暫無產品詳細描述，歡迎品嘗當季旬味。'}
+                </p>
+              </div>
+
+              <button onclick="openModal('${item.id}')" class="w-full mt-2 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-700/50 hover:bg-brand-50 hover:text-brand-700 dark:hover:bg-brand-950 dark:hover:text-brand-300 rounded-xl transition border border-slate-200 dark:border-slate-700 flex items-center justify-center gap-1.5">
+                <i class="fa-regular fa-circle-check"></i> 查看詳細與產地
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Modal 控制 logic
+    function openModal(id) {
+      const item = state.allProduce.find(p => p.id === id);
+      if (!item) return;
+
+      document.getElementById('modal-title').textContent = item.name;
+      document.getElementById('modal-img').src = item.imageUrl || PLACEHOLDER_SVG;
+      document.getElementById('modal-img').onerror = function() { this.src = PLACEHOLDER_SVG; };
+      document.getElementById('modal-month-badge').textContent = `盛產月份：${item.months ? item.months.join(', ') : '--'} 月`;
+      document.getElementById('modal-desc').textContent = item.feature || '暫無描述。';
+      document.getElementById('modal-location-raw').textContent = item.locationRaw || '全台各地盛產';
+
+      const countiesContainer = document.getElementById('modal-counties');
+      if (item.counties && item.counties.length > 0) {
+        countiesContainer.innerHTML = item.counties.map(c => `<span class="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300 text-xs font-bold px-2.5 py-0.5 rounded-md"><i class="fa-solid fa-location-dot mr-1"></i>${c}</span>`).join('');
+      } else {
+        countiesContainer.innerHTML = `<span class="bg-slate-100 text-slate-600 text-xs px-2.5 py-0.5 rounded-md">全台主要產區</span>`;
+      }
+
+      document.getElementById('detail-modal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('detail-modal').classList.add('hidden');
+    }
+
+    // 深色模式切換
+    function toggleDarkMode() {
+      const isDark = document.documentElement.classList.toggle('dark');
+      const iconMobile = document.getElementById('theme-icon-mobile');
+      const iconDesktop = document.getElementById('theme-icon-desktop');
+
+      const iconClass = isDark ? 'fa-sun' : 'fa-moon';
+      if (iconMobile) iconMobile.className = `fa-solid ${iconClass}`;
+      if (iconDesktop) iconDesktop.className = `fa-solid ${iconClass}`;
+    }
+
+    // 初始化應用程式
+    window.onload = function() {
+      initDashboard();
+    };
+  </script>
+</body>
+</html>
