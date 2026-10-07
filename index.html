@@ -197,8 +197,56 @@
       '高雄市', '屏東縣', '宜蘭縣', '花蓮縣', '台東縣', '澎湖縣', '金門縣', '連江縣'
     ];
 
-    // SVG 預設占位圖 (圖檔載入失敗時自動備援)
-    const PLACEHOLDER_SVG = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300"><rect width="100%" height="100%" fill="%23f1f5f9"/><text x="50%" y="50%" font-family="sans-serif" font-size="18" font-weight="bold" fill="%2394a3b8" text-anchor="middle" dominant-baseline="middle">旬農產圖檔載入中</text></svg>';
+    // 精美向量 SVG 農產圖檔動態生成器 (解決外連圖片失效與照片誤植問題)
+    function getProduceSvgImage(name) {
+      const configs = {
+        '蓮霧': { bg1: '#be123c', bg2: '#881337', icon: '🍎', label: '深紅多汁 ‧ 黑珍珠蓮霧' },
+        '蜜棗': { bg1: '#65a30d', bg2: '#3f6212', icon: '🍏', label: '皮薄肉翠 ‧ 台灣雪梨' },
+        '草莓': { bg1: '#e11d48', bg2: '#9f1239', icon: '🍓', label: '香氣濃郁 ‧ 冬季採果' },
+        '桶柑 / 柑橘': { bg1: '#ea580c', bg2: '#9a3412', icon: '🍊', label: '甘甜多汁 ‧ 年節吉利' },
+        '枇杷': { bg1: '#f59e0b', bg2: '#b45309', icon: '🍋', label: '黃金果肉 ‧ 潤肺柔嫩' },
+        '箭竹筍': { bg1: '#16a34a', bg2: '#14532d', icon: '🎋', label: '高纖鮮嫩 ‧ 部落旬味' },
+        '鳳梨 (金鑽鳳梨)': { bg1: '#d97706', bg2: '#854d0e', icon: '🍍', label: '金鑽鳳梨 ‧ 甜美香濃' },
+        '綠竹筍': { bg1: '#22c55e', bg2: '#15803d', icon: '🎍', label: '鮮甜如梨 ‧ 夏日涼拌' },
+        '玉荷包荔枝': { bg1: '#dc2626', bg2: '#991b1b', icon: '🍒', label: '籽小肉厚 ‧ 初夏極品' },
+        '愛文芒果': { bg1: '#f97316', bg2: '#c2410c', icon: '🥭', label: '豔紅甜美 ‧ 夏季王者' },
+        '巨峰葡萄': { bg1: '#7e22ce', bg2: '#581c87', icon: '🍇', label: '果粉勻稱 ‧ 甜高18度' },
+        '西瓜': { bg1: '#059669', bg2: '#064e3b', icon: '🍉', label: '沙甜解渴 ‧ 消暑聖品' },
+        '麻豆文旦': { bg1: '#84cc16', bg2: '#4d7c0f', icon: '🍈', label: '老欉文旦 ‧ 中秋名產' },
+        '火龍果 (紅肉/白肉)': { bg1: '#db2777', bg2: '#9d174d', icon: '🌺', label: '甜菜紅素 ‧ 清爽高纖' },
+        '甜柿': { bg1: '#ea580c', bg2: '#7c2d12', icon: '🟧', label: '脆甜高水 ‧ 高山名產' },
+        '釋迦 (大目/鳳梨釋迦)': { bg1: '#15803d', bg2: '#14532d', icon: '🍈', label: '台東釋迦 ‧ Q彈香濃' },
+        '椪柑': { bg1: '#f97316', bg2: '#9a3412', icon: '🍊', label: '青黃相間 ‧ 古早風味' },
+        '珍珠芭樂 (番石榴)': { bg1: '#10b981', bg2: '#065f46', icon: '🍐', label: '香脆爽口 ‧ 高維生素C' },
+        '木瓜 (台農二號)': { bg1: '#f97316', bg2: '#b45309', icon: '🍈', label: '肉紅味香 ‧ 四季豐美' },
+        '三星蔥': { bg1: '#16a34a', bg2: '#064e3b', icon: '🥬', label: '蔥白質柔 ‧ 爆香之王' }
+      };
+
+      const cfg = configs[name] || { bg1: '#16a34a', bg2: '#065f46', icon: '🌾', label: '台灣優良農特產品' };
+
+      const svgStr = `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400" viewBox="0 0 600 400">
+        <defs>
+          <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="${cfg.bg1}" />
+            <stop offset="100%" stop-color="${cfg.bg2}" />
+          </linearGradient>
+          <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
+            <circle cx="15" cy="15" r="1.5" fill="#ffffff" opacity="0.12"/>
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#grad)"/>
+        <rect width="100%" height="100%" fill="url(#grid)"/>
+        <circle cx="300" cy="160" r="85" fill="#ffffff" opacity="0.18"/>
+        <text x="300" y="175" font-size="72" text-anchor="middle" dominant-baseline="middle">${cfg.icon}</text>
+        <text x="300" y="280" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="28" font-weight="bold" fill="#ffffff" text-anchor="middle">${name}</text>
+        <rect x="150" y="305" width="300" height="32" rx="16" fill="#ffffff" fill-opacity="0.22"/>
+        <text x="300" y="326" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="14" font-weight="600" fill="#ffffff" text-anchor="middle">${cfg.label}</text>
+      </svg>`;
+
+      return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgStr);
+    }
+
+    const PLACEHOLDER_SVG = getProduceSvgImage('台灣農特產');
 
     // 全域狀態管理
     const state = {
@@ -213,24 +261,24 @@
     // 預設完整的全台四季農產品 Mock 資料集 (以備 static json 不存在時展演)
     const MOCK_PRODUCE_DATA = [
       { id: 'p1', name: '蓮霧', months: [1, 2, 3, 4, 11, 12], locationRaw: '屏東縣高樹、林邊、高雄市六龜', counties: ['屏東縣', '高雄市'], feature: '黑珍珠與帝王蓮霧色澤深紅，汁多甜美，口感清脆爽口。', imageUrl: 'https://images.unsplash.com/photo-1596368708356-6e1e1025ee73?auto=format&fit=crop&w=600&q=80' },
-      { id: 'p2', name: '蜜棗', months: [1, 2, 3, 12], locationRaw: '高雄市燕巢、大社、屏東縣高樹', counties: ['高雄市', '屏東縣'], feature: '皮薄肉翠、果肉細致多汁，有台灣雪梨之美譽。', imageUrl: 'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&w=600&q=80' },
+      { id: 'p2', name: '蜜棗', months: [1, 2, 3, 12], locationRaw: '高雄市燕巢、大社、屏東縣高樹', counties: ['高雄市', '屏東縣'], feature: '皮薄肉翠、果肉細致多汁，有台灣雪梨之美譽。', imageUrl: '' },
       { id: 'p3', name: '草莓', months: [1, 2, 3, 12], locationRaw: '苗栗縣大湖鄉、泰安鄉', counties: ['苗栗縣'], feature: '香氣濃郁，酸甜適中，大湖草莓為冬季採果熱門首選。', imageUrl: 'https://images.unsplash.com/photo-1464965911861-746a04b4bca6?auto=format&fit=crop&w=600&q=80' },
       { id: 'p4', name: '桶柑 / 柑橘', months: [1, 2, 3], locationRaw: '新竹縣峨眉、苗栗縣、台中市東勢', counties: ['新竹縣', '苗栗縣', '台中市'], feature: '柑橘多汁甜美，春節拜年年節吉祥象徵果物。', imageUrl: 'https://images.unsplash.com/photo-1611080626919-7cf5a9dbab5b?auto=format&fit=crop&w=600&q=80' },
-      { id: 'p5', name: '枇杷', months: [2, 3, 4], locationRaw: '台中市太平區、新社、南投縣國姓', counties: ['台中市', '南投縣'], feature: '黃金枇杷果肉柔軟多汁，潤肺止咳，春季珍貴果品。', imageUrl: 'https://images.unsplash.com/photo-1628151015968-3a4429e9ef04?auto=format&fit=crop&w=600&q=80' },
+      { id: 'p5', name: '枇杷', months: [2, 3, 4], locationRaw: '台中市太平區、新社、南投縣國姓', counties: ['台中市', '南投縣'], feature: '黃金枇杷果肉柔軟多汁，潤肺止咳，春季珍貴果品。', imageUrl: '' },
       { id: 'p6', name: '箭竹筍', months: [3, 4], locationRaw: '花蓮縣光復鄉、新北市烏來區', counties: ['花蓮縣', '新北市'], feature: '原住民傳統野味旬味，富含高纖維，口感鮮嫩香脆。', imageUrl: '' },
       { id: 'p7', name: '鳳梨 (金鑽鳳梨)', months: [3, 4, 5, 6, 7], locationRaw: '屏東縣、高雄市大樹、台南市關廟、嘉義縣民雄', counties: ['屏東縣', '高雄市', '台南市', '嘉義縣'], feature: '肉質細緻、不咬舌，甜度極高且帶有迷人熱帶果香。', imageUrl: 'https://images.unsplash.com/photo-1550258987-190a2d41a8ba?auto=format&fit=crop&w=600&q=80' },
       { id: 'p8', name: '綠竹筍', months: [5, 6, 7, 8, 9], locationRaw: '新北市五股、八里、台北市木柵、桃園市', counties: ['新北市', '台北市', '桃園市'], feature: '鮮甜如水梨，夏季沙拉涼拌與竹筍排骨湯的最佳主角。', imageUrl: '' },
-      { id: 'p9', name: '玉荷包荔枝', months: [5, 6], locationRaw: '高雄市大樹、旗山、屏東縣', counties: ['高雄市', '屏東縣'], feature: '籽小肉厚、果肉彈牙爆汁，初夏限定極品農產。', imageUrl: 'https://images.unsplash.com/photo-1527281400683-1aae777175f8?auto=format&fit=crop&w=600&q=80' },
+      { id: 'p9', name: '玉荷包荔枝', months: [5, 6], locationRaw: '高雄市大樹、旗山、屏東縣', counties: ['高雄市', '屏東縣'], feature: '籽小肉厚、果肉彈牙爆汁，初夏限定極品農產。', imageUrl: '' },
       { id: 'p10', name: '愛文芒果', months: [5, 6, 7], locationRaw: '屏東縣枋山、台南市玉井、楠西', counties: ['屏東縣', '台南市'], feature: '果皮豔紅，果肉金黃甜美香氣撲鼻，台灣夏季代表水果。', imageUrl: 'https://images.unsplash.com/photo-1553279768-865429fa0078?auto=format&fit=crop&w=600&q=80' },
       { id: 'p11', name: '巨峰葡萄', months: [6, 7, 8, 12], locationRaw: '彰化縣大村、溪湖、台中市新社、南投縣信義', counties: ['彰化縣', '台中市', '南投縣'], feature: '果粉勻稱、果肉緊實，甜度高達18度以上。', imageUrl: 'https://images.unsplash.com/photo-1537640538966-79f369143f8f?auto=format&fit=crop&w=600&q=80' },
       { id: 'p12', name: '西瓜', months: [5, 6, 7, 8], locationRaw: '花蓮縣壽豐、雲林縣二崙、台南市', counties: ['花蓮縣', '雲林縣', '台南市'], feature: '沙甜解渴，花蓮大西瓜汁多肉沙，夏日消暑聖品。', imageUrl: 'https://images.unsplash.com/photo-1587049352847-81a56d773cae?auto=format&fit=crop&w=600&q=80' },
-      { id: 'p13', name: '麻豆文旦', months: [8, 9], locationRaw: '台南市麻豆區、花蓮縣瑞穗、苗栗縣西湖', counties: ['台南市', '花蓮縣', '苗栗縣'], feature: '中秋佳節必備，老欉文旦果肉晶瑩甘甜、回甘生津。', imageUrl: 'https://images.unsplash.com/photo-1601493700631-2b16ec4b4716?auto=format&fit=crop&w=600&q=80' },
-      { id: 'p14', name: '火龍果 (紅肉/白肉)', months: [6, 7, 8, 9, 10, 11], locationRaw: '南投縣名間、彰化縣二林、台南市', counties: ['南投縣', '彰化縣', '台南市'], feature: '富含甜菜紅素與膳食纖維，口感甜美清爽健康。', imageUrl: 'https://images.unsplash.com/photo-1527325678964-549216468488?auto=format&fit=crop&w=600&q=80' },
+      { id: 'p13', name: '麻豆文旦', months: [8, 9], locationRaw: '台南市麻豆區、花蓮縣瑞穗、苗栗縣西湖', counties: ['台南市', '花蓮縣', '苗栗縣'], feature: '中秋佳節必備，老欉文旦果肉晶瑩甘甜、回甘生津。', imageUrl: '' },
+      { id: 'p14', name: '火龍果 (紅肉/白肉)', months: [6, 7, 8, 9, 10, 11], locationRaw: '南投縣名間、彰化縣二林、台南市', counties: ['南投縣', '彰化縣', '台南市'], feature: '富含甜菜紅素與膳食纖維，口感甜美清爽健康。', imageUrl: '' },
       { id: 'p15', name: '甜柿', months: [9, 10, 11, 12], locationRaw: '台中市和平區摩天嶺、苗栗縣泰安、新竹縣五峰', counties: ['台中市', '苗栗縣', '新竹縣'], feature: '脆甜高水分，紅艷碩大，深秋高山頂級名產。', imageUrl: '' },
-      { id: 'p16', name: '釋迦 (大目/鳳梨釋迦)', months: [8, 9, 10, 11, 12, 1, 2], locationRaw: '台東縣太麻里、卑南、東河', counties: ['台東縣'], feature: '台東代表特產，鳳梨釋迦帶有微酸鳳梨香，口感Q彈。', imageUrl: 'https://images.unsplash.com/photo-1591857177580-dc82b9ac4e1e?auto=format&fit=crop&w=600&q=80' },
+      { id: 'p16', name: '釋迦 (大目/鳳梨釋迦)', months: [8, 9, 10, 11, 12, 1, 2], locationRaw: '台東縣太麻里、卑南、東河', counties: ['台東縣'], feature: '台東代表特產，鳳梨釋迦帶有微酸鳳梨香，口感Q彈。', imageUrl: '' },
       { id: 'p17', name: '椪柑', months: [10, 11, 12], locationRaw: '台中市東勢、石岡、嘉義縣竹崎、苗栗縣', counties: ['台中市', '嘉義縣', '苗栗縣'], feature: '果皮青黃相間，甘甜多汁帶有微酸柑橘古早味。', imageUrl: '' },
-      { id: 'p18', name: '珍珠芭樂 (番石榴)', months: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], locationRaw: '高雄市燕巢、彰化縣社頭、雲林縣', counties: ['高雄市', '彰化縣', '雲林縣'], feature: '全年盛產，珍珠芭樂香脆爽口、富含高單位維生素 C。', imageUrl: 'https://images.unsplash.com/photo-1536511135890-a7d5b839352c?auto=format&fit=crop&w=600&q=80' },
-      { id: 'p19', name: '木瓜 (台農二號)', months: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], locationRaw: '屏東縣、台南市、南投縣名間', counties: ['屏東縣', '台南市', '南投縣'], feature: '肉紅味香甜，木瓜牛奶最佳原料，四季皆豐美。', imageUrl: 'https://images.unsplash.com/photo-1617112848923-cc2234396a8d?auto=format&fit=crop&w=600&q=80' },
+      { id: 'p18', name: '珍珠芭樂 (番石榴)', months: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], locationRaw: '高雄市燕巢、彰化縣社頭、雲林縣', counties: ['高雄市', '彰化縣', '雲林縣'], feature: '全年盛產，珍珠芭樂香脆爽口、富含高單位維生素 C。', imageUrl: '' },
+      { id: 'p19', name: '木瓜 (台農二號)', months: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], locationRaw: '屏東縣、台南市、南投縣名間', counties: ['屏東縣', '台南市', '南投縣'], feature: '肉紅味香甜，木瓜牛奶最佳原料，四季皆豐美。', imageUrl: '' },
       { id: 'p20', name: '三星蔥', months: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], locationRaw: '宜蘭縣三星鄉', counties: ['宜蘭縣'], feature: '蔥白長、質地柔軟甜美不辣，料理爆香提味之王。', imageUrl: '' }
     ];
 
@@ -356,6 +404,9 @@
         state.selectedCounty = document.getElementById('county-select').value;
         state.searchKeyword = document.getElementById('search-input').value.trim().toLowerCase();
 
+        // 同音字/常見俗寫自動對應 (例: 琵琶 -> 枇杷)
+        const searchKeywordAlias = state.searchKeyword.replace(/琵琶/g, '枇杷');
+
         const monthData = state.produceMonthMap[state.currentMonth] || [];
 
         const filtered = monthData.filter(item => {
@@ -364,9 +415,10 @@
             (item.counties && item.counties.includes(state.selectedCounty)) ||
             (item.locationRaw && item.locationRaw.includes(state.selectedCounty));
 
-          // 2. 關鍵字搜尋 (品名、描述、產地)
+          // 2. 關鍵字搜尋 (品名、描述、產地，支援同音字別名)
           const matchKeyword = !state.searchKeyword ||
             item.name.toLowerCase().includes(state.searchKeyword) ||
+            item.name.toLowerCase().includes(searchKeywordAlias) ||
             (item.feature && item.feature.toLowerCase().includes(state.searchKeyword)) ||
             (item.locationRaw && item.locationRaw.toLowerCase().includes(state.searchKeyword));
 
@@ -431,13 +483,14 @@
           : `<span class="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-[11px] font-medium px-2 py-0.5 rounded-md">${item.locationRaw || '全台各地'}</span>`;
 
         const monthSpanText = item.months ? `${item.months.join(', ')}月` : '盛產中';
+        const imgSrc = item.imageUrl || getProduceSvgImage(item.name);
 
         return `
           <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700/80 overflow-hidden shadow-xs hover:shadow-lg transition-all duration-300 flex flex-col group">
             <div class="relative h-44 bg-slate-100 dark:bg-slate-900 overflow-hidden">
-              <img src="${item.imageUrl || PLACEHOLDER_SVG}" 
+              <img src="${imgSrc}" 
                    alt="${item.name}" 
-                   onerror="this.onerror=null; this.src='${PLACEHOLDER_SVG}';" 
+                   onerror="this.onerror=null; this.src=getProduceSvgImage('${item.name.replace(/'/g, "\\'")}');" 
                    class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
               <div class="absolute top-2.5 right-2.5 bg-black/60 backdrop-blur-xs text-white text-[11px] font-medium px-2 py-0.5 rounded-full">
                 盛產期: ${monthSpanText}
@@ -475,9 +528,12 @@
       const item = state.allProduce.find(p => p.id === id);
       if (!item) return;
 
+      const imgSrc = item.imageUrl || getProduceSvgImage(item.name);
       document.getElementById('modal-title').textContent = item.name;
-      document.getElementById('modal-img').src = item.imageUrl || PLACEHOLDER_SVG;
-      document.getElementById('modal-img').onerror = function() { this.src = PLACEHOLDER_SVG; };
+      document.getElementById('modal-img').src = imgSrc;
+      document.getElementById('modal-img').onerror = function() { 
+        this.src = getProduceSvgImage(item.name); 
+      };
       document.getElementById('modal-month-badge').textContent = `盛產月份：${item.months ? item.months.join(', ') : '--'} 月`;
       document.getElementById('modal-desc').textContent = item.feature || '暫無描述。';
       document.getElementById('modal-location-raw').textContent = item.locationRaw || '全台各地盛產';
